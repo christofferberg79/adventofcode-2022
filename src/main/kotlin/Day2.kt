@@ -12,14 +12,25 @@ class Day2(private val input: List<String>) {
 
     fun part1() = input.sumOf { score(it) }
 
-    fun part2() = 0
+    fun part2() = input.sumOf { score2(it) }
 
     private fun score(round: String): Int {
-        val (s1, s2) = round.split(" ").map { shapeScores.getValue(it) }
+        val (s1, s2) = parse(round)
         return when(s2) {
             s1 -> s2 + 3
             s1 % 3 + 1 -> s2 + 6
             else -> s2
         }
     }
+
+    private fun score2(round: String): Int {
+        val (s1, s2) = parse(round)
+        return when (s2) {
+            1 -> (s1 + 1) % 3 + 1
+            2 -> 3 + s1
+            else -> 6 + s1 % 3 + 1
+        }
+    }
+
+    private fun parse(round: String) = round.split(" ").map { shapeScores.getValue(it) }
 }
