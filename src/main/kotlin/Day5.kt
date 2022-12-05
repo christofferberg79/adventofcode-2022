@@ -26,11 +26,11 @@ class Day5(input: List<String>) {
     private fun parseCrates(input: List<String>) =
         input.last().mapIndexed { i, c -> c to i }.filter { (c, _) -> c.isDigit() }
             .associate { (c, i) ->
-                c.digitToInt() to input.asReversed().drop(1).map { it[i] }.filter { it != ' ' }.toMutableList()
+                c.digitToInt() to input.asReversed().drop(1).map { it[i] }.filter(Char::isLetter).toMutableList()
             }
 
     private fun parseMoves(input: List<String>) = input.map { line ->
-        line.split(Regex("\\D+")).filter(String::isNotEmpty).map(String::toInt)
+        line.split(" ").mapNotNull(String::toIntOrNull)
     }
 
     private fun topCratesAsString() = stacks.values.map { it.last() }.joinToString("")

@@ -5,7 +5,7 @@ class Day1(private val input: List<String>) {
 
     fun part2() = sums(input).sorted().takeLast(3).sum()
 
-    private fun sums(lines: List<String>): MutableList<Int> {
+    private fun sums(lines: List<String>): List<Int> {
         val sums = mutableListOf(0)
         for (line in lines) {
             if (line.isEmpty()) {
