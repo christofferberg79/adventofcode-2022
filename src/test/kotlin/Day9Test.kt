@@ -15,6 +15,17 @@ class Day9Test {
         "R 2"
     )
 
+    private val largerExampleInput = listOf(
+        "R 5",
+        "U 8",
+        "L 8",
+        "D 3",
+        "R 17",
+        "D 10",
+        "L 25",
+        "U 20"
+    )
+
     private val realInput = Input("day9.txt").lines()
 
     @Test
@@ -32,12 +43,18 @@ class Day9Test {
     @Test
     fun part2_Example() {
         val result = Day9(exampleInput).part2()
-        assertEquals(0, result)
+        assertEquals(1, result)
+    }
+
+    @Test
+    fun part2_LargerExample() {
+        val result = Day9(largerExampleInput).part2()
+        assertEquals(36, result)
     }
 
     @Test
     fun part2_RealInput() {
         val result = Day9(realInput).part2()
-        assertEquals(0, result)
+        assertEquals(2352, result)
     }
 }
