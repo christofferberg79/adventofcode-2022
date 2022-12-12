@@ -32,28 +32,33 @@ class Day12(input: List<String>) {
         start = s
     }
 
-    fun part1(): Int {
-        val solved = mutableSetOf(start)
-        val toCheck = start.adjacent().associateWith { 1 }.toMutableMap()
+    fun part1() = solve().getValue(start)
+
+    fun part2(): Int {
+        val solutions = solve()
+        return startingPoints().mapNotNull { solutions[it] }.min()
+    }
+
+    private fun solve(): Map<Pos, Int> {
+        val solved = mutableMapOf<Pos, Int>()
+        val toCheck = mutableMapOf(target to 0)
 
         while (toCheck.isNotEmpty()) {
             val (pos, steps) = toCheck.minBy { it.value }
-            for (next in pos.adjacent() - solved) {
-                if (next == target) {
-                    return steps + 1
-                }
+            for (next in pos.adjacent() - solved.keys) {
                 toCheck.merge(next, steps + 1) { a, b -> min(a, b) }
             }
-            solved += pos
+            solved[pos] = steps
             toCheck.remove(pos)
         }
-        error("no solution found")
+        return solved
     }
-
-    fun part2() = 0
 
     private data class Pos(val x: Int, val y: Int)
 
     private fun Pos.adjacent() = listOf(Pos(x - 1, y), Pos(x + 1, y), Pos(x, y - 1), Pos(x, y + 1))
-        .filter { p -> p.x in grid[0].indices && p.y in grid.indices && grid[p.y][p.x] <= grid[y][x] + 1 }
+        .filter { p -> p.x in grid[0].indices && p.y in grid.indices && grid[p.y][p.x] >= grid[y][x] - 1 }
+
+    private fun startingPoints() = grid.indices.flatMap { y -> grid[y].indices.map { x -> Pos(x, y) } }
+        .filter { (x, y) -> grid[y][x] == 0 }
 }
