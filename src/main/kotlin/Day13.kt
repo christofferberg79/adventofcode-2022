@@ -4,38 +4,45 @@ import kotlin.math.min
 
 class Day13(private val input: List<String>) {
     fun part1() = (0..input.lastIndex step 3)
-        .map { i -> input[i] to input[i + 1] }
-        .mapIndexed { index, pair -> index to pair }
-        .filter { (_, pair) -> pair.isInTheRightOrder() }
-        .sumOf { (index, _) -> index + 1 }
+        .map { i -> parse(input[i]) to parse(input[i + 1]) }
+        .mapIndexed { index, pair -> index + 1 to pair }
+        .filter { (_, pair) -> pair.first <= pair.second }
+        .sumOf { (index, _) -> index }
 
-    fun part2() = 0
+    fun part2(): Int {
+        val div1 = "[[2]]"
+        val div2 = "[[6]]"
+        val sorted = (input + div1 + div2)
+            .filter(String::isNotBlank)
+            .map { s -> s to parse(s) }
+            .sortedBy { (_, p) -> p }
+        val i1 = sorted.indexOfFirst { (s, _) -> s == div1 } + 1
+        val i2 = sorted.indexOfFirst { (s, _) -> s == div2 } + 1
+        return i1 * i2
+    }
 
-    private sealed interface E
-    private class I(val value: Int) : E
-    private class L(val list: List<E>) : E
+    private sealed interface E : Comparable<E>
+    private class I(val value: Int) : E {
+        override fun compareTo(other: E) = when (other) {
+            is I -> this.value.compareTo(other.value)
+            is L -> L(listOf(this)).compareTo(other)
+        }
+    }
 
-    private fun L(e: E) = L(listOf(e))
+    private class L(val list: List<E>) : E {
+        override fun compareTo(other: E) = when (other) {
+            is I -> compareTo(L(listOf(other)))
+            is L -> compareTo(other)
+        }
 
-    private operator fun E.compareTo(other: E): Int {
-        return when (this) {
-            is I -> when (other) {
-                is I -> this.value.compareTo(other.value)
-                is L -> L(this).compareTo(other)
-            }
-
-            is L -> when (other) {
-                is I -> this.compareTo(L(other))
-                is L -> {
-                    for (i in 0..min(this.list.lastIndex, other.list.lastIndex)) {
-                        val comp = this.list[i].compareTo(other.list[i])
-                        if (comp != 0) {
-                            return comp
-                        }
-                    }
-                    this.list.size.compareTo(other.list.size)
+        fun compareTo(other: L): Int {
+            for (i in 0..min(this.list.lastIndex, other.list.lastIndex)) {
+                val comp = this.list[i].compareTo(other.list[i])
+                if (comp != 0) {
+                    return comp
                 }
             }
+            return this.list.size.compareTo(other.list.size)
         }
     }
 
@@ -66,6 +73,4 @@ class Day13(private val input: List<String>) {
     private fun parse(s: String): E {
         return Parser(s).parseList()
     }
-
-    private fun Pair<String, String>.isInTheRightOrder() = parse(first) <= parse(second)
 }
