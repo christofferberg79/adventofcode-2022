@@ -39,7 +39,29 @@ class Day14(private val input: List<String>) {
         return xs.flatMap { x -> ys.map { y -> Pos(x, y) } }
     }
 
-    fun part2() = 0
+    fun part2(): Int {
+        val occupied = getRocks().toMutableSet()
+        val maxY = occupied.maxOf { it.y }
+
+        var count = 0
+        while (true) {
+            var sandPos = Pos(500, 0)
+            while (true) {
+                val toCheck = listOf(0, -1, 1).map { dx -> Pos(sandPos.x + dx, sandPos.y + 1) }
+                val nextPos = toCheck.firstOrNull { it !in occupied && it.y < maxY + 2 }
+                if (nextPos == null) {
+                    occupied += sandPos
+                    count++
+                    if (sandPos == Pos(500, 0)) {
+                        return count
+                    }
+                    break
+                } else {
+                    sandPos = nextPos
+                }
+            }
+        }
+    }
 
     private data class Pos(val x: Int, val y: Int)
 }
