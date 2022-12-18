@@ -23,7 +23,27 @@ class Day15(private val input: List<String>) {
         return count - data.values.filter { it.y == y }.toSet().size
     }
 
-    fun part2() = 0
+    fun part2(n: Int): Long {
+        val data = parse(input)
+        for ((s, b) in data) {
+            val d = s.distTo(b)
+            for (dx in -d - 1..d + 1) {
+                val dy = (dx + d + 1)
+                val p1 = Pos(s.x + dx, s.y + dy)
+                if (check(p1, data, n)) {
+                    return p1.x * 4000000L + p1.y
+                }
+                val p2 = Pos(s.x + dx, s.y - dy)
+                if (check(p2, data, n)) {
+                    return p2.x * 4000000L + p2.y
+                }
+            }
+        }
+        error("no solution found")
+    }
+
+    private fun check(pos: Pos, data: Map<Pos, Pos>, n: Int) =
+        pos.x in 0..n && pos.y in 0..n && data.none { (s, b) -> s.distTo(pos) <= s.distTo(b) }
 
     private data class Pos(val x: Int, val y: Int)
 
