@@ -1,28 +1,31 @@
 package cberg.aoc2022
 
 class Day20(private val input: List<Int>) {
-    fun part1(): Int {
-        val nodes = input.map(::Node)
+    fun part1() = solve()
+
+    fun part2() = solve(811589153L, 10)
+
+    private fun solve(factor: Long = 1, times: Int = 1): Long {
+        val nodes = input.map { Node(it * factor) }
 
         nodes.windowed(2).forEach { (n1, n2) -> n2.insertAfter(n1) }
 
-        for (node in nodes) {
-            when {
-                node.value > 0 -> node.moveRight(node.value)
-                node.value < 0 -> node.moveLeft(-node.value)
+        repeat(times) {
+            for (node in nodes) {
+                node.moveRight(node.value.mod(input.size - 1))
             }
         }
 
-        val zero = nodes.single { it.value == 0 }
+        val zero = nodes.single { it.value == 0L }
 
         return zero[1000 % input.size].value + zero[2000 % input.size].value + zero[3000 % input.size].value
     }
 
-    fun part2() = 0
-
-    private class Node(val value: Int) {
-        private var prev = this
-        private var next = this
+    private class Node(val value: Long) {
+        var prev = this
+            private set
+        var next = this
+            private set
 
         operator fun get(i: Int): Node {
             check(i >= 0)
@@ -38,31 +41,15 @@ class Day20(private val input: List<Int>) {
             node.next = this
         }
 
-        fun insertBefore(node: Node) {
-            this.next = node
-            this.prev = node.prev
-            node.prev.next = this
-            node.prev = this
-        }
-
         fun moveRight(n: Int) {
-            check(n > 0)
+            require(n >= 0)
+            if (n == 0) return
             var node = next
             remove()
             repeat(n - 1) {
                 node = node.next
             }
             insertAfter(node)
-        }
-
-        fun moveLeft(n: Int) {
-            check(n > 0)
-            var node = prev
-            remove()
-            repeat(n - 1) {
-                node = node.prev
-            }
-            insertBefore(node)
         }
 
         private fun remove() {
