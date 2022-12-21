@@ -7,8 +7,8 @@ class Day21(private val input: List<String>) {
     fun part2(): Long {
         val root = parse(input, "humn").simplify() as Bin
         return when {
-            root.rhs is Const -> solve(root.lhs, root.rhs)
-            root.lhs is Const -> solve(root.rhs, root.lhs)
+            root.right is Const -> solve(root.left, root.right)
+            root.left is Const -> solve(root.right, root.left)
             else -> error("no solution")
         }
     }
@@ -20,56 +20,61 @@ class Day21(private val input: List<String>) {
 
     private class Const(val value: Long) : Expr
 
-    private sealed class Bin(val lhs: Expr, val rhs: Expr, private val op: Long.(Long) -> Long) : Expr {
-        abstract fun new(lhs: Expr, rhs: Expr): Expr
-        abstract fun solveLhs(e: Expr): Expr
-        abstract fun solveRhs(e: Expr): Expr
+    private sealed class Bin(val left: Expr, val right: Expr, private val op: Long.(Long) -> Long) : Expr {
+        abstract fun new(left: Expr, right: Expr): Expr
+        abstract fun solveForLeft(result: Expr): Expr
+        abstract fun solveForRight(result: Expr): Expr
 
         override fun simplify(): Expr {
-            val simpleLhs = lhs.simplify()
-            val simpleRhs = rhs.simplify()
-            return if (simpleLhs is Const && simpleRhs is Const) {
-                Const(simpleLhs.value.op(simpleRhs.value))
+            val simpleLeft = left.simplify()
+            val simpleRight = right.simplify()
+            return if (simpleLeft is Const && simpleRight is Const) {
+                Const(simpleLeft.value.op(simpleRight.value))
             } else {
-                new(simpleLhs, simpleRhs)
+                new(simpleLeft, simpleRight)
             }
         }
     }
 
-    private inner class Add(lhs: Expr, n2: Expr) : Bin(lhs, n2, Long::plus) {
-        override fun new(lhs: Expr, rhs: Expr) = Add(lhs, rhs)
-        override fun solveLhs(e: Expr) = Sub(e, rhs) // x + a = b --> x = b - a
-        override fun solveRhs(e: Expr) = Sub(e, lhs) // a + x = b --> x = b - a
+    private inner class Plus(left: Expr, right: Expr) : Bin(left, right, Long::plus) {
+        override fun new(left: Expr, right: Expr) = left + right
+        override fun solveForLeft(result: Expr) = result - right
+        override fun solveForRight(result: Expr) = result - left
     }
 
-    private inner class Sub(lhs: Expr, rhs: Expr) : Bin(lhs, rhs, Long::minus) {
-        override fun new(lhs: Expr, rhs: Expr) = Sub(lhs, rhs)
-        override fun solveLhs(e: Expr) = Add(e, rhs) // x - a = b --> x = b + a
-        override fun solveRhs(e: Expr) = Sub(lhs, e) // a - x = b --> x = a - b
+    private inner class Minus(left: Expr, right: Expr) : Bin(left, right, Long::minus) {
+        override fun new(left: Expr, right: Expr) = left - right
+        override fun solveForLeft(result: Expr) = result + right
+        override fun solveForRight(result: Expr) = left - result
     }
 
-    private inner class Mult(lhs: Expr, rhs: Expr) : Bin(lhs, rhs, Long::times) {
-        override fun new(lhs: Expr, rhs: Expr) = Mult(lhs, rhs)
-        override fun solveLhs(e: Expr) = Div(e, rhs) // x * a = b --> x = b / a
-        override fun solveRhs(e: Expr) = Div(e, lhs) // a * x = b --> x = b / a
+    private inner class Times(left: Expr, right: Expr) : Bin(left, right, Long::times) {
+        override fun new(left: Expr, right: Expr) = left * right
+        override fun solveForLeft(result: Expr) = result / right
+        override fun solveForRight(result: Expr) = result / left
     }
 
-    private inner class Div(lhs: Expr, rhs: Expr) : Bin(lhs, rhs, Long::div) {
-        override fun new(lhs: Expr, rhs: Expr) = Div(lhs, rhs)
-        override fun solveLhs(e: Expr) = Mult(e, rhs) // x / a = b --> x = b * a
-        override fun solveRhs(e: Expr) = Div(lhs, e) // a / x = b --> x = a / b
+    private inner class Div(left: Expr, right: Expr) : Bin(left, right, Long::div) {
+        override fun new(left: Expr, right: Expr) = left / right
+        override fun solveForLeft(result: Expr) = result * right
+        override fun solveForRight(result: Expr) = left / result
     }
 
-    private inner class Unknown : Expr
+    private operator fun Expr.plus(other: Expr) = Plus(this, other)
+    private operator fun Expr.minus(other: Expr) = Minus(this, other)
+    private operator fun Expr.times(other: Expr) = Times(this, other)
+    private operator fun Expr.div(other: Expr) = Div(this, other)
+
+    private object Unknown : Expr
 
     private fun solve(lhs: Expr, rhs: Const): Long = when (lhs) {
         is Unknown -> rhs.value
         is Const -> error("There is no unknown in this equation")
         is Bin -> {
             val (newLhs, newRhs) = when {
-                lhs.rhs is Const -> lhs.lhs to lhs.solveLhs(rhs)
-                lhs.lhs is Const -> lhs.rhs to lhs.solveRhs(rhs)
-                else -> error("There are more than one unknowns in this equation")
+                lhs.right is Const -> lhs.left to lhs.solveForLeft(rhs)
+                lhs.left is Const -> lhs.right to lhs.solveForRight(rhs)
+                else -> error("There are more than one unknown in this equation")
             }
             solve(newLhs, newRhs.simplify() as Const)
         }
@@ -82,21 +87,21 @@ class Day21(private val input: List<String>) {
 
     private fun getJob(name: String, lookup: Map<String, String>, unknown: String?): Expr {
         if (name == unknown) {
-            return Unknown()
+            return Unknown
         }
         val job = lookup.getValue(name)
         if (job.all(Char::isDigit)) {
             return Const(job.toLong())
         }
 
-        val (lhsName, op, rhsName) = job.split(" ")
-        val lhs = getJob(lhsName, lookup, unknown)
-        val rhs = getJob(rhsName, lookup, unknown)
+        val (leftName, op, rightName) = job.split(" ")
+        val left = getJob(leftName, lookup, unknown)
+        val right = getJob(rightName, lookup, unknown)
         return when (op) {
-            "+" -> Add(lhs, rhs)
-            "-" -> Sub(lhs, rhs)
-            "*" -> Mult(lhs, rhs)
-            "/" -> Div(lhs, rhs)
+            "+" -> left + right
+            "-" -> left - right
+            "*" -> left * right
+            "/" -> left / right
             else -> error("invalid operation: $op")
         }
     }
